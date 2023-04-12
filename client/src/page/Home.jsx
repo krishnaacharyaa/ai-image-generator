@@ -14,16 +14,46 @@ const RenderCards = ({ data, title }) => {
 	);
 };
 
+const getPrediction = (prompt, randomValue = 3) => {
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			let result = [];
+			var present = null;
+			present = randomPromptsAndResults.find((obj) =>
+				obj.hasOwnProperty(prompt)
+			);
+			console.log(`present value ${present} `);
+			if (present !== undefined) {
+				console.log(`${present[prompt]}`);
+			}
+			if (randomPromptsAndResults[randomValue][prompt]) {
+				result = randomPromptsAndResults[randomValue][prompt];
+			} else if (present != null) {
+				result = present[prompt];
+			} else if (prompt.trim() != "" && prompt != undefined) {
+				result = randomPromptsAndResults[3]["default prompt"];
+			}
+			console.log(result);
+			resolve({
+				status: "succeeded",
+				result: result,
+				metrics: {
+					predict_time: 11.990901,
+				},
+			});
+		}, 10000);
+	});
+};
+
 const Home = () => {
-	const [loading, setLoading] = useState(false);
-	const [allPosts, setAllPosts] = useState(null);
-
-	const [searchText, setSearchText] = useState("");
-	const [searchTimeout, setSearchTimeout] = useState(null);
-	const [searchedResults, setSearchedResults] = useState(null);
-
+	const [prompt, setPrompt] = useState("");
+	const [images, setImages] = useState([]);
+	const [progress, setProgress] = useState(0);
+	const [initialLoad, setInitialLoad] = useState(true);
+	const currentProgress = useRef();
 	const fetchPosts = async () => {
 		setLoading(true);
+		console.log("Inside fetching posts");
 
 		try {
 			const response = await fetch("http://localhost:8080/api/v1/post", {
@@ -42,33 +72,96 @@ const Home = () => {
 			alert(err);
 		} finally {
 			setLoading(false);
+			console.log("Inside fetching posts last", allPosts);
 		}
 	};
 
 	useEffect(() => {
 		fetchPosts();
 	}, []);
+	const [loading, setLoading] = useState(false);
+	const [allPosts, setAllPosts] = useState(null);
 
-	const handleSearchChange = (e) => {
-		clearTimeout(searchTimeout);
-		setSearchText(e.target.value);
+	// const [searchText, setSearchText] = useState("");
+	// const [searchTimeout, setSearchTimeout] = useState(null);
+	// const [searchedResults, setSearchedResults] = useState(null);
 
-		setSearchTimeout(
-			setTimeout(() => {
-				const searchResult = allPosts.filter(
-					(item) =>
-						item.name.toLowerCase().includes(searchText.toLowerCase()) ||
-						item.prompt.toLowerCase().includes(searchText.toLowerCase())
-				);
-				setSearchedResults(searchResult);
-			}, 500)
-		);
+	useEffect(() => {
+		return () => clearInterval(currentProgress.current);
+	}, []);
+	useEffect(() => {
+		if (progress >= 100) {
+			clearInterval(currentProgress.current);
+			setProgress(0);
+		}
+	}, [progress]);
+	const timer = () => {
+		if (progress != 0) {
+			clearInterval(currentProgress.current);
+			setProgress(0);
+		}
+		currentProgress.current = setInterval(() => {
+			setProgress((prev) => prev + 1);
+		}, 100);
 	};
-	const [prompt, setPrompt] = useState("");
-	const [images, setImages] = useState([]);
-	const [progress, setProgress] = useState(0);
-	const [initialLoad, setInitialLoad] = useState(true);
-	const currentProgress = useRef();
+
+	const handleSubmit = async (e) => {
+		setImages([]);
+		if (prompt.trim() === "" || prompt === null) {
+			return toast.error("Prompt Cannot be empty");
+		}
+		setInitialLoad(false);
+		timer();
+		console.log(prompt);
+		// setInProgress(true);
+
+		const response = await getPrediction(prompt);
+
+		const { result } = response;
+		setImages(result);
+	};
+
+	const handleRandom = async (e) => {
+		setInitialLoad(false);
+		setImages([]);
+		timer();
+		let response;
+		var prompt;
+		const randomIndex = Math.floor(Math.random() * 3);
+		switch (randomIndex) {
+			case 0:
+				prompt = Object.keys(randomPromptsAndResults[0])[0];
+				break;
+			case 1:
+				prompt = Object.keys(randomPromptsAndResults[1])[0];
+				break;
+			case 2:
+				prompt = Object.keys(randomPromptsAndResults[2])[0];
+				break;
+			default:
+				prompt = Object.keys(randomPromptsAndResults[3])[0];
+		}
+		setPrompt(prompt);
+		response = await getPrediction(prompt, randomIndex);
+		const { result } = response;
+		setImages(result);
+	};
+
+	// const handleSearchChange = (e) => {
+	// 	clearTimeout(searchTimeout);
+	// 	setSearchText(e.target.value);
+
+	// 	setSearchTimeout(
+	// 		setTimeout(() => {
+	// 			const searchResult = allPosts.filter(
+	// 				(item) =>
+	// 					item.name.toLowerCase().includes(searchText.toLowerCase()) ||
+	// 					item.prompt.toLowerCase().includes(searchText.toLowerCase())
+	// 			);
+	// 			setSearchedResults(searchResult);
+	// 		}, 500)
+	// 	);
+	// };
 	return (
 		<div className="flex min-h-screen w-full flex-col object-contain bg-black">
 			<div className="relative h-96 w-full">
@@ -167,52 +260,20 @@ const Home = () => {
 				Featured Gallery
 			</div>
 			<div className="flex md:flex-row flex-col justify-evenly gap-4 bg-black md:px-28 py-4">
-				<div className="relative h-full md:w-1/3 px-8 md:px-0">
-					<img
-						src="https://th.bing.com/th/id/OIG.lQW2ATPf8sWgXG4Dl7dT?pid=ImgGn"
-						alt="Your Image"
-						className="h-72 w-full rounded-lg"
-					/>
-					<div className="absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
-						<h2 className="font-bold text-white">
-							Panda bear baking a cake in a sunny kitchen, digital art
-						</h2>
-					</div>
-				</div>
-				<div className="relative h-full md:w-1/3 px-8 md:px-0">
-					<img
-						src="https://www.greataiprompts.com/wp-content/uploads/2023/01/4268126f-9359-4a75-859a-3977946214ae-683x1024.jpg.webp"
-						alt="Your Image"
-						className="h-72 w-full  rounded-lg object-cover"
-					/>
-
-					<div className="absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
-						<h2 className="font-bold text-white">
-							Portrait of a beutiful young woman of 18 age
-						</h2>
-					</div>
-				</div>
-				<div className="relative h-full md:w-1/3 px-8 md:px-0">
-					<img
-						src="https://th.bing.com/th/id/OIG.WMtTCbVcZ7AzNjn1tVwW?pid=ImgGn"
-						alt="Your Image"
-						className="h-72 w-full rounded-lg"
-					/>
-					<div className="absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
-						<h2 className="font-bold text-white">
-							Renaissance painting of an elephant in a tuxedo
-						</h2>
-					</div>
-				</div>
+				{allPosts &&
+					allPosts.map((e) => (
+						<div className="relative h-full group md:w-1/3 px-8 md:px-0">
+							<img
+								src={e.photo}
+								alt="Your Image"
+								className="h-72 w-full rounded-lg"
+							/>
+							<div className="invisible group-hover:visible absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
+								<h2 className="font-bold text-white">{e.prompt}</h2>
+							</div>
+						</div>
+					))}
 			</div>
-			{/* <div className="flex items-center p-4 md:p-8 justify-center bg-black mo">
-				<img
-					src="https://img.icons8.com/fluency/512/github.png"
-					className="  md:right-28 md:top-12 md:h-12 md:w-12 h-8 w-8 "
-					alt=""
-				/>
-				<div className="text-white">Github</div>
-			</div> */}
 			<ToastContainer />
 		</div>
 	);
