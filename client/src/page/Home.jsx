@@ -260,19 +260,21 @@ const Home = () => {
 				Featured Gallery
 			</div>
 			<div className="flex md:flex-row flex-col justify-evenly gap-4 bg-black md:px-28 py-4">
-				{allPosts &&
-					allPosts.map((e) => (
-						<div className="relative h-full group md:w-1/3 px-8 md:px-0">
-							<img
-								src={e.photo}
-								alt="Your Image"
-								className="h-72 w-full rounded-lg"
-							/>
-							<div className="invisible group-hover:visible absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
-								<h2 className="font-bold text-white">{e.prompt}</h2>
-							</div>
-						</div>
-					))}
+				{
+					allPosts && allPosts.map((post) => <Card key={post._id} {...post} />)
+					// allPosts.map((e) => (
+					// 	<div className="relative h-full group md:w-1/3 px-8 md:px-0">
+					// 		<img
+					// 			src={e.photo}
+					// 			alt="Your Image"
+					// 			className="h-72 w-full rounded-lg"
+					// 		/>
+					// 		<div className="invisible group-hover:visible absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
+					// 			<h2 className="font-bold text-white">{e.prompt}</h2>
+					// 		</div>
+					// 	</div>
+					// ))
+				}
 			</div>
 			<ToastContainer />
 		</div>
