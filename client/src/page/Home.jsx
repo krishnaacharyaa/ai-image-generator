@@ -15,42 +15,12 @@ const RenderCards = ({ data, title }) => {
 	);
 };
 
-const getPrediction = (prompt, randomValue = 3) => {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			let result = [];
-			var present = null;
-			present = randomPromptsAndResults.find((obj) =>
-				obj.hasOwnProperty(prompt)
-			);
-			console.log(`present value ${present} `);
-			if (present !== undefined) {
-				console.log(`${present[prompt]}`);
-			}
-			if (randomPromptsAndResults[randomValue][prompt]) {
-				result = randomPromptsAndResults[randomValue][prompt];
-			} else if (present != null) {
-				result = present[prompt];
-			} else if (prompt.trim() != "" && prompt != undefined) {
-				result = randomPromptsAndResults[3]["default prompt"];
-			}
-			console.log(result);
-			resolve({
-				status: "succeeded",
-				result: result,
-				metrics: {
-					predict_time: 11.990901,
-				},
-			});
-		}, 10000);
-	});
-};
-
 const Home = () => {
 	const [prompt, setPrompt] = useState("");
 	const [images, setImages] = useState([]);
 	const [progress, setProgress] = useState(0);
 	const [initialLoad, setInitialLoad] = useState(true);
+	const [loading, setLoading] = useState(false);
 	const currentProgress = useRef();
 	const fetchPosts = async () => {
 		setLoading(true);
@@ -80,7 +50,6 @@ const Home = () => {
 	useEffect(() => {
 		fetchPosts();
 	}, []);
-	const [loading, setLoading] = useState(false);
 	const [allPosts, setAllPosts] = useState(null);
 	const [form, setForm] = useState({
 		prompt: "",
@@ -109,22 +78,6 @@ const Home = () => {
 		}, 100);
 	};
 
-	const handleSubmit = async (e) => {
-		setImages([]);
-		if (prompt.trim() === "" || prompt === null) {
-			return toast.error("Prompt Cannot be empty");
-		}
-		setInitialLoad(false);
-		timer();
-		console.log(prompt);
-		// setInProgress(true);
-
-		// setForm({photo:})
-		const response = await getPrediction(prompt);
-
-		const { result } = response;
-		setImages(result);
-	};
 	const generateImage = async () => {
 		setImages([]);
 		if (prompt.trim() === "" || prompt === null) {
@@ -189,6 +142,31 @@ const Home = () => {
 		}
 	};
 
+	const handleSubmit = async (e) => {
+		e.preventDefault();
+		if (prompt.trim() === "" || prompt === null) {
+			return toast.error("Prompt Cannot be empty");
+		}
+		setLoading(true);
+		try {
+			console.log(JSON.stringify({ prompt: prompt, photo: images[0] }));
+			const response = await fetch("http://localhost:8080/api/v1/post", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ prompt: prompt, photo: images[0] }),
+			});
+			navigate("/");
+			console.log(
+				"I have already posted the image in monogdb" + (await response.json())
+			);
+		} catch (err) {
+			alert(err);
+		} finally {
+			setLoading(false);
+		}
+	};
 	// const handleSearchChange = (e) => {
 	// 	clearTimeout(searchTimeout);
 	// 	setSearchText(e.target.value);
@@ -241,15 +219,24 @@ const Home = () => {
 				</div>
 			</div>
 			{images.length != 0 ? (
-				<div className="grid grid-cols-2 gap-4  md:px-28 px-8 py-8 bg-gradient-to-b from-[#2e1216] bg-black w-full">
-					{images.map((image, index) => (
-						<img
-							key={index}
-							src={image}
-							className={`h-48 ${index % 2 === 0 ? "ml-auto" : "mr-auto"}`}
-							alt={`Image ${index}`}
-						/>
-					))}
+				<div className="">
+					<div className="grid grid-cols-2 gap-4  md:px-28 px-8 py-8 bg-gradient-to-b from-[#2e1216] bg-black w-full">
+						{images.map((image, index) => (
+							<img
+								key={index}
+								src={image}
+								className={`h-48 ${index % 2 === 0 ? "ml-auto" : "mr-auto"}`}
+								alt={`Image ${index}`}
+							/>
+						))}
+					</div>
+					<button
+						type="submit"
+						onClick={handleSubmit}
+						className="mt-3 text-white mx-auto bg-green-400 flex font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
+					>
+						{loading ? "Sharing..." : "Share with the Community"}
+					</button>
 				</div>
 			) : (
 				!initialLoad && (
@@ -302,21 +289,7 @@ const Home = () => {
 				Featured Gallery
 			</div>
 			<div className="flex md:flex-row flex-col justify-evenly gap-4 bg-black md:px-28 py-4">
-				{
-					allPosts && allPosts.map((post) => <Card key={post._id} {...post} />)
-					// allPosts.map((e) => (
-					// 	<div className="relative h-full group md:w-1/3 px-8 md:px-0">
-					// 		<img
-					// 			src={e.photo}
-					// 			alt="Your Image"
-					// 			className="h-72 w-full rounded-lg"
-					// 		/>
-					// 		<div className="invisible group-hover:visible absolute inset-x-0 bottom-0 px-9 md:px-0 bg-black bg-opacity-50 p-4">
-					// 			<h2 className="font-bold text-white">{e.prompt}</h2>
-					// 		</div>
-					// 	</div>
-					// ))
-				}
+				{allPosts && allPosts.map((post) => <Card key={post._id} {...post} />)}
 			</div>
 			<ToastContainer />
 		</div>
