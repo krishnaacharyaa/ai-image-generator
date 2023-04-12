@@ -22,21 +22,23 @@ router.route("/").post(async (req, res) => {
 
 		const aiResponse = await openai.createImage({
 			prompt,
-			n: 1,
+			n: 4,
 			size: "1024x1024",
 			// response_format: "b64_json",
 			response_format: "url",
 		});
 
-		console.log(
-			"I am inside of generating image from dalle" +
-				aiResponse.data.data[0].url +
-				"I am inside of generating image from dalle" +
-				aiResponse.data.data[0].b64_json
-		);
+		aiResponse.data.data.map((e) => console.log(e.url));
+		// console.log(
+		// 	"I am inside of generating image from dalle" +
+		// 		aiResponse.data.data.url +
+		// 		"I am inside of generating image from dalle" +
+		// 		aiResponse.data.data[0].b64_json
+		// );
 		// const image = aiResponse.data.data[0].b64_json;
-		const image = aiResponse.data.data[0].url;
-		res.status(200).json({ photo: image });
+		// const image = aiResponse.data.data[0].url;
+		const images = aiResponse.data;
+		res.status(200).json({ photos: images });
 	} catch (error) {
 		console.error(error);
 		res

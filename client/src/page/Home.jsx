@@ -81,7 +81,10 @@ const Home = () => {
 	}, []);
 	const [loading, setLoading] = useState(false);
 	const [allPosts, setAllPosts] = useState(null);
-
+	const [form, setForm] = useState({
+		prompt: "",
+		photo: "",
+	});
 	// const [searchText, setSearchText] = useState("");
 	// const [searchTimeout, setSearchTimeout] = useState(null);
 	// const [searchedResults, setSearchedResults] = useState(null);
@@ -115,10 +118,46 @@ const Home = () => {
 		console.log(prompt);
 		// setInProgress(true);
 
+		// setForm({photo:})
 		const response = await getPrediction(prompt);
 
 		const { result } = response;
 		setImages(result);
+	};
+	const generateImage = async () => {
+		setImages([]);
+		if (prompt.trim() === "" || prompt === null) {
+			return toast.error("Prompt Cannot be empty");
+		}
+		setInitialLoad(false);
+		timer();
+		console.log(prompt);
+		try {
+			// setGeneratingImg(true);
+			const response = await fetch("http://localhost:8080/api/v1/dalle", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompt: prompt,
+				}),
+			});
+
+			const data = await response.json();
+			console.log("I have generated image", data);
+			data.photos.data.map((e) =>
+				setImages((prevImages) => [...prevImages, e.url])
+			);
+			// setForm({ ...form, photo: `data:image/jpeg;base64,${data.photo}` });
+			// setForm({ ...form, photo: data.photo });
+			// setImages(...data.photos.data.url);
+			// setImages(...data.photos.data.url);
+		} catch (err) {
+			alert(err);
+		} finally {
+			// setGeneratingImg(false);
+		}
 	};
 
 	const handleRandom = async (e) => {
@@ -183,14 +222,14 @@ const Home = () => {
 					<div className="flex gap-2 justify-center items-center disabled:bg-gray-400 mb-6 mt-4 md:my-0">
 						<button
 							className="rounded-lg bg-green-400 p-2"
-							// onClick={handleSubmit}
+							onClick={generateImage}
 							disabled={progress > 0}
 						>
 							Generate
 						</button>
 						<button
 							disabled={progress > 0}
-							// onClick={handleRandom}
+							onClick={handleRandom}
 							className="rounded-lg border border-green-400 p-2 text-green-400"
 						>
 							Suprise Me

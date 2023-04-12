@@ -9,7 +9,6 @@ const CreatePost = () => {
 	const navigate = useNavigate();
 
 	const [form, setForm] = useState({
-		name: "",
 		prompt: "",
 		photo: "",
 	});
