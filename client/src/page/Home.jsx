@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { Card, FormField, Loader } from "../components";
 
+import { getRandomPrompt } from "../utils";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 const RenderCards = ({ data, title }) => {
@@ -164,26 +165,28 @@ const Home = () => {
 		setInitialLoad(false);
 		setImages([]);
 		timer();
-		let response;
-		var prompt;
-		const randomIndex = Math.floor(Math.random() * 3);
-		switch (randomIndex) {
-			case 0:
-				prompt = Object.keys(randomPromptsAndResults[0])[0];
-				break;
-			case 1:
-				prompt = Object.keys(randomPromptsAndResults[1])[0];
-				break;
-			case 2:
-				prompt = Object.keys(randomPromptsAndResults[2])[0];
-				break;
-			default:
-				prompt = Object.keys(randomPromptsAndResults[3])[0];
+		const randomPrompt = getRandomPrompt();
+		setPrompt(randomPrompt);
+		try {
+			const response = await fetch("http://localhost:8080/api/v1/dalle", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					prompt: randomPrompt,
+				}),
+			});
+			const data = await response.json();
+			console.log("I have generated image", data);
+			data.photos.data.map((e) =>
+				setImages((prevImages) => [...prevImages, e.url])
+			);
+		} catch (err) {
+			alert(err);
+		} finally {
+			// setGeneratingImg(false);
 		}
-		setPrompt(prompt);
-		response = await getPrediction(prompt, randomIndex);
-		const { result } = response;
-		setImages(result);
 	};
 
 	// const handleSearchChange = (e) => {
